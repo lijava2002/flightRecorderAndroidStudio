@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<items version="2" >
+
+    <item
+        jar="C:\Users\Manuel\AppData\Local\Android\sdk\extras\android\m2repository\com\android\support\support-v4\18.0.0\support-v4-18.0.0.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="44ec51e9d395a47aab135e5e1b556c0007442156">
+        <dex dex="C:\Users\Manuel\Fh\MSc\Masterarbeit\flightRecorderAndroidStudio\app\build\intermediates\pre-dexed\debug\support-v4-18.0.0-fe1fb41203bb3d88c5e18e23a8352965dec73671.jar" />
+    </item>
+
+</items>
