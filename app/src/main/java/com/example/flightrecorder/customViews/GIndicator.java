@@ -6,6 +6,7 @@ import android.view.View;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.util.Log;
 
 public class GIndicator extends View
 {
@@ -67,7 +68,10 @@ public class GIndicator extends View
         Rect windowRect = new Rect();
         getWindowVisibleDisplayFrame(windowRect);
 
-        setMeasuredDimension(m_scaleWidth + m_leftSpacing, windowRect.height() - (getTop() * 3));
+        int[] location = new int[2];
+        getLocationInWindow(location);
+
+        setMeasuredDimension(m_scaleWidth + m_leftSpacing, windowRect.height() - location[1]);
     }
 
     public void setIndicating(Boolean indicating)
@@ -119,7 +123,7 @@ public class GIndicator extends View
     {
         int lineCount = m_maxScaleG - m_minScaleG + 2;
 
-        float scaleSpacing = (float)(getHeight() / lineCount);
+        float scaleSpacing = (float)(getHeight() / (lineCount+1));
         float scaleWidth = (float)(getWidth() / 15);
 
         for(int i = 1; i < lineCount + 1; i++)
@@ -147,9 +151,9 @@ public class GIndicator extends View
 
     private void drawIndicatorLine(Canvas canvas, Paint lineStyle, float g, int lineXPos, int lineLength)
     {
-        float lineCount = (float)(m_maxScaleG - m_minScaleG + 2);
+        float lineCount = (float)(m_maxScaleG - m_minScaleG + 2 + 1);
 
-        float position = lineCount - (g - (float) m_minScaleG) - 1.0f;
+        float position = lineCount - (g - (float) m_minScaleG) - 2.0f;
         position /= lineCount;
 
         float scaleSpacing = (float)(getHeight());

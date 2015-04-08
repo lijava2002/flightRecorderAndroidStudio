@@ -16,38 +16,45 @@
         android:layout_height="wrap_content" />
 
     <LinearLayout
+        android:id="@+id/rightColumn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:layout_marginLeft="20dp">
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="10dp" >
 
-        <TextView
-            android:id="@+id/textView_currentGForce"
-            android:text="@string/textView_current_gForce"
+        <com.example.flightrecorder.customViews.TextBox
+            android:id="@+id/infoBox"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textColor="@android:color/white" />
-
-        <TextView
-            android:id="@+id/textView_maxGForce"
-            android:text="@string/textView_max_gForce"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textColor="@android:color/white" />
-
-        <TextView
-            android:id="@+id/textView_minGForce"
-            android:text="@string/textView_min_gForce"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textColor="@android:color/white" />
+            android:layout_height="wrap_content" />
 
         <Button
             android:id="@+id/button_record"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/button_record"
-            android:onClick="toggleRecording" />
+            android:onClick="toggleRecording"
+            android:drawableLeft="@drawable/start_record_icon"
+            android:layout_marginTop="10dp"
+            />
+
+        <Button
+            android:id="@+id/button_send_flight"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/button_send_delete_flight"
+            android:onClick="sendFlight"
+            android:layout_marginTop="10dp"
+            />
+
+        <Button
+            android:id="@+id/button_help"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/button_manual"
+            android:onClick="showHelp"
+            android:layout_marginTop="10dp"
+            />
 
     </LinearLayout>
 

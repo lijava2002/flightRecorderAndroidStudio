@@ -14,13 +14,12 @@ public class LogWriter
 	
 	public void openFile(String fileName)
 	{
-		Log.d(TAG, "open " + fileName);
-		
 		if(isExternalStorageWritable())
 		{
 			try
 			{
-				File dir = Environment.getExternalStorageDirectory();
+				File dir = new File(Environment.getExternalStorageDirectory(), "/FlightRecorder/"); //Environment.getExternalStorageDirectory();
+                dir.mkdir();
 				_writer = new FileWriter(new File(dir, fileName), true);
 			}
 			catch (IOException e)
@@ -28,6 +27,25 @@ public class LogWriter
 				e.printStackTrace();
 			}
 		}
+        else
+        {
+            try
+            {
+                //File dir = new File("/root/FlightRecorder/"); //Environment.getExternalStorageDirectory();
+                //dir.mkdir();
+                //_writer = new FileWriter(new File(dir, fileName), true);
+
+                File dir = Environment.getRootDirectory(); //new File(Environment.getDataDirectory(), "/FlightRecorder/");
+                dir.mkdir();
+                Log.d(TAG, dir.toString());
+
+                _writer = new FileWriter(new File(dir, fileName), true);
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+        }
 	}
 	
 	public void closeFile()

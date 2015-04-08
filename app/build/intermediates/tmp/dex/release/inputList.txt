@@ -1,0 +1,2 @@
+C:\Users\Manuel\Fh\MSc\Masterarbeit\flightRecorderAndroidStudio\app\build\intermediates\classes\release
+C:\Users\Manuel\Fh\MSc\Masterarbeit\flightRecorderAndroidStudio\app\build\intermediates\pre-dexed\release\support-v4-18.0.0-fe1fb41203bb3d88c5e18e23a8352965dec73671.jar

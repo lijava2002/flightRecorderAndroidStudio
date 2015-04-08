@@ -2,12 +2,18 @@ package com.example.flightrecorder;
 
 import com.example.flightrecorder.ServicePathLog;
 import com.example.flightrecorder.dialogs.DialogGPSOff;
+import com.example.flightrecorder.dialogs.DialogHelp;
 import com.example.flightrecorder.R;
 import com.example.flightrecorder.customViews.GIndicator;
+import com.example.flightrecorder.customViews.TextBox;
+import com.example.flightrecorder.customViews.DataItem;
+import com.example.flightrecorder.dialogs.DialogNoRecording;
+import com.example.flightrecorder.dialogs.DialogSendDeleteFlight;
 
 import android.content.BroadcastReceiver;
 import android.content.IntentFilter;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.content.Context;
 import android.content.Intent;
@@ -15,8 +21,13 @@ import android.content.SharedPreferences;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Button;
+
+import java.io.File;
 
 public class MainActivity extends FragmentActivity
 {
@@ -28,6 +39,8 @@ public class MainActivity extends FragmentActivity
 	private Boolean m_logging = false;
 
     private BroadcastReceiver m_broadcastReceiver = null;
+
+    private final int SELECT_FLIGHT = 0;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -43,6 +56,22 @@ public class MainActivity extends FragmentActivity
 		getMenuInflater().inflate(R.menu.main, menu);
 		return true;
 	}
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item)
+    {
+        switch (item.getItemId())
+        {
+            case R.id.menu_send_flight:
+                doSendFlight();
+                break;
+            case R.id.menu_manual:
+                doShowHelp();
+                break;
+        }
+
+        return true;
+    }
 	
 	@Override
 	public void onResume()
@@ -57,7 +86,7 @@ public class MainActivity extends FragmentActivity
 
         registerBroadcastReceiver();
 
-
+        setRecordButtonState(m_logging);
 	}
 
     @Override
@@ -79,6 +108,38 @@ public class MainActivity extends FragmentActivity
 			startPositionLogging();
 		}
 	}
+
+    public void sendFlight(View view)
+    {
+        doSendFlight();
+    }
+
+    public void showHelp(View view)
+    {
+        doShowHelp();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent imageReturnedIntent)
+    {
+        Log.d(TAG, "onActivityResult");
+
+        super.onActivityResult(requestCode, resultCode, imageReturnedIntent);
+
+        switch(requestCode)
+        {
+            case SELECT_FLIGHT:
+                if(resultCode == RESULT_OK)
+                {
+                    final Uri flightUri = imageReturnedIntent.getData();
+
+                    Log.d(TAG, flightUri.toString());
+
+                    MailUtility.sendEmail(this, getString(R.string.email_address),
+                            getString(R.string.mail_subject), getString(R.string.mail_message), flightUri);
+                }
+        }
+    }
 	
 	private void startPositionLogging()
     {
@@ -110,6 +171,14 @@ public class MainActivity extends FragmentActivity
             {
                 gIndicator.setIndicating(true);
             }
+
+            TextBox textBox = (TextBox)findViewById(R.id.infoBox);
+            if(textBox != null)
+            {
+                textBox.setIndicating(true);
+            }
+
+            setRecordButtonState(true);
 		}
 		else
 		{
@@ -137,13 +206,19 @@ public class MainActivity extends FragmentActivity
         {
             gIndicator.setIndicating(false);
         }
+
+        TextBox textBox = (TextBox)findViewById(R.id.infoBox);
+        if(textBox != null)
+        {
+            textBox.setIndicating(false);
+        }
+
+        setRecordButtonState(false);
 	}
 
 
     private void registerBroadcastReceiver()
     {
-        Log.d(TAG, "registerBroadcastReceiver");
-
         try
         {
             m_broadcastReceiver = new BroadcastReceiver()
@@ -160,7 +235,10 @@ public class MainActivity extends FragmentActivity
                     double minGForce = 1.0;
                     minGForce = intent.getDoubleExtra(getString(R.string.broadcast_extra_min_gforce), minGForce);
 
-                    updateGIndication(gForce, maxGForce, minGForce);
+                    int gpsWaypointCount = 0;
+                    gpsWaypointCount = intent.getIntExtra(getString(R.string.broadcast_extra_gps_waypoint_count), gpsWaypointCount);
+
+                    updateGIndication(gForce, maxGForce, minGForce, gpsWaypointCount);
                 }
             };
 
@@ -175,8 +253,6 @@ public class MainActivity extends FragmentActivity
 
     private void unregisterBroadcastReceiver()
     {
-        Log.d(TAG, "unregisterBroadcastReceiver");
-
         try
         {
             if (m_broadcastReceiver != null)
@@ -190,12 +266,8 @@ public class MainActivity extends FragmentActivity
         }
     }
 
-    private void updateGIndication(double currentG, double maxG, double minG)
+    private void updateGIndication(double currentG, double maxG, double minG, int waypointCount)
     {
-        setTextViewText(R.id.textView_currentGForce, getString(R.string.textView_current_gForce) + currentG);
-        setTextViewText(R.id.textView_maxGForce, getString(R.string.textView_max_gForce) + maxG);
-        setTextViewText(R.id.textView_minGForce, getString(R.string.textView_min_gForce) + minG);
-
         GIndicator gIndicator = (GIndicator)findViewById(R.id.gIndicator);
         if(gIndicator != null)
         {
@@ -203,6 +275,28 @@ public class MainActivity extends FragmentActivity
             gIndicator.setCurrentG((float)currentG);
             gIndicator.setMaxG((float)maxG);
             gIndicator.setMinG((float)minG);
+        }
+
+        TextBox textBox = (TextBox)findViewById(R.id.infoBox);
+        if(textBox != null)
+        {
+            textBox.setIndicating(m_logging);
+            textBox.addDataItem(new DataItem(getString(R.string.infobox_current_g), (float)currentG));
+            textBox.addDataItem(new DataItem(getString(R.string.infobox_max_g), (float)maxG));
+            textBox.addDataItem(new DataItem(getString(R.string.infobox_min_g), (float)minG));
+            textBox.addDataItem(new DataItem(getString(R.string.infobox_gps_waypoint_count), (float)waypointCount));
+            textBox.invalidate();
+        }
+
+        LinearLayout rightColumn = (LinearLayout)findViewById(R.id.rightColumn);
+        if(rightColumn != null)
+        {
+            // Log.d(TAG, "refreshing right column");
+            rightColumn.invalidate();
+        }
+        else
+        {
+            Log.e(TAG, "unable to find right column");
         }
     }
 
@@ -217,5 +311,48 @@ public class MainActivity extends FragmentActivity
         {
             Log.e(TAG, "setTextViewText: failed to find text view with id " + textViewId);
         }
+    }
+
+    private void setRecordButtonState(Boolean recording)
+    {
+        Button recordingButton = (Button)findViewById(R.id.button_record);
+        if(recordingButton != null)
+        {
+            if(recording)
+            {
+                recordingButton.setText(getString(R.string.button_stop_record));
+                recordingButton.setCompoundDrawablesWithIntrinsicBounds(R.drawable.stop_record_icon, 0, 0, 0);
+            }
+            else
+            {
+                recordingButton.setText(getString(R.string.button_record));
+                recordingButton.setCompoundDrawablesWithIntrinsicBounds(R.drawable.start_record_icon, 0, 0, 0);
+            }
+        }
+    }
+
+    private void doSendFlight()
+    {
+        DialogSendDeleteFlight dialog = new DialogSendDeleteFlight();
+        dialog.show(this.getSupportFragmentManager(), TAG);
+
+        /*
+        try
+        {
+            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+            intent.setType("file/json");
+            startActivityForResult(intent, SELECT_FLIGHT);
+        }
+        catch(Exception e)
+        {
+            Log.e(TAG, e.getMessage());
+        }
+        */
+    }
+
+    private void doShowHelp()
+    {
+        DialogHelp dialog = new DialogHelp();
+        dialog.show(this.getSupportFragmentManager(), TAG);
     }
 }

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- From: file:/C:/Users/Manuel/Fh/MSc/Masterarbeit/flightRecorderAndroidStudio/app/src/main/res/values-de/strings.xml -->
+    <eat-comment/>
+    <string name="action_settings">Einstellungen</string>
+    <string name="app_name">FlightRecorder</string>
+    <string name="broadcast_extra_gforce">gForce</string>
+    <string name="broadcast_extra_gps_waypoint_count">gpsWaypointCount</string>
+    <string name="broadcast_extra_max_gforce">maxGForce</string>
+    <string name="broadcast_extra_min_gforce">minGForce</string>
+    <string name="button_cancel">Abbrechen</string>
+    <string name="button_delete">Löschen</string>
+    <string name="button_manual">Hilfe</string>
+    <string name="button_record">Aufnehmen</string>
+    <string name="button_send">Senden</string>
+    <string name="button_send_delete_flight">Daten senden</string>
+    <string name="button_stop_record">Stop</string>
+    <string name="dialog_gps_off">Position nicht verfügbar</string>
+    <string name="dialog_gps_off_message">Kann Position nicht bestimmen. Bitte prüfen Sie ob das GPS an ist.</string>
+    <string name="dialog_help">Hilfe</string>
+    <string name="dialog_help_button">Knopf</string>
+    <string name="dialog_help_press">Drücke</string>
+    <string name="dialog_help_record">Aufnehmen</string>
+    <string name="dialog_help_record_message_0">Starte Aufnahme</string>
+    <string name="dialog_help_record_message_1">Beende Aufnahme</string>
+    <string name="dialog_help_record_message_2">Aufnahmen werden im externen Speicher (z.B. SD Karte) im Ordner FlightRecorder gespeichert.</string>
+    <string name="dialog_help_select">Wähle</string>
+    <string name="dialog_help_send">Daten senden</string>
+    <string name="dialog_help_send_message_0">Flugdaten aus Liste (nach Datum)</string>
+    <string name="dialog_help_send_message_1">E-Mail Client wählen (falls wählbar) und E-Mail senden</string>
+    <string name="dialog_help_weather">Wetter Daten</string>
+    <string name="dialog_help_weather_message_0">Bitte speichern Sie auch Wetter Daten, vor allem Wind Karten, aus Ihrer Flugplanung. Bitte senden Sie diese Daten an</string>
+    <string name="dialog_help_weather_message_1">Nur mit diesen Daten kann voller Gebrauch von Aufnahmen gemacht werden.</string>
+    <string name="dialog_no_recording">Keine Aufnahmen</string>
+    <string name="dialog_no_recording_message_0">Es wurden keine Aufnahmen gefunden. Bitte nehmen Sie erst einen Flug auf.</string>
+    <string name="dialog_no_recording_message_1">Sie können Aufnahme Datein auch manuell senden. Bitte senden Sie Aufnahmen an</string>
+    <string name="dialog_send_or_delete_flight">Senden/Löschen</string>
+    <string name="dialog_send_or_delete_flight_delete">Löschen</string>
+    <string name="dialog_send_or_delete_flight_send">Senden</string>
+    <string name="dialog_thanks">Danke</string>
+    <string name="dialog_thanks_message">Vielen Dank für den Datensatz! Bitte denke daran auch die Wetterdaten die für die Flugplanung benutzt wurden zu senden, die Addresse ist</string>
+    <string name="email_address">McDobusch@gmx.net</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="infobox_current_g">Aktuelle G</string>
+    <string name="infobox_gps_waypoint_count">GPS Wpts</string>
+    <string name="infobox_max_g">Max G</string>
+    <string name="infobox_min_g">Min G</string>
+    <string name="intent_gforce_update">G-Force Update</string>
+    <string name="log_airplane_type">Flugzeug Typ</string>
+    <string name="log_departure">Startort</string>
+    <string name="log_destination">Ziel</string>
+    <string name="mail_message">Flight data attached to this mail.</string>
+    <string name="mail_subject">Flight Data</string>
+    <string name="preferences_last_file_name">preferences_last_file_name</string>
+    <string name="preferences_name">flight_recorder_preferences</string>
+    <string name="textView_current_gForce">Aktuelle G: </string>
+    <string name="textView_max_gForce">Max G: </string>
+    <string name="textView_min_gForce">Min G: </string>
+</resources>

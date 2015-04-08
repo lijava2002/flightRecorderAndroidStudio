@@ -9,10 +9,13 @@ import com.example.flightrecorder.math.Matrix33f;
 import com.example.flightrecorder.R;
 import com.example.flightrecorder.LogWriter;
 
+import com.example.flightrecorder.data.FlightsDataSource;
+
 import android.app.Activity;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
@@ -61,6 +64,7 @@ public class ServicePathLog extends Service implements SensorEventListener
 
     private double _minGForce = 1.0;
     private double _maxGForce = 1.0;
+    private int _gpsWaypointCount = 0;
 
     private Matrix33f _pitchRotation = null;
     private Matrix33f _bankRotation = null;
@@ -108,28 +112,17 @@ public class ServicePathLog extends Service implements SensorEventListener
 			Calendar c = Calendar.getInstance();
 			int t = (c.get(Calendar.HOUR_OF_DAY) * 60 * 60) + (c.get(Calendar.MINUTE) * 60) + c.get(Calendar.SECOND);
 			t -= m_startTime;
-			
-			//_flight.addWaypoint(new Flight.Waypoint(t, location.getLatitude(), location.getLongitude(), location.getAltitude(), location.getSpeed()));
-			
-			String jsonMessage = "";
-			
-			if(_waypointsCount > 0)
-			{
-				jsonMessage += ",";
-			}
-			
-			jsonMessage += "\"waypoint\":{";
-			jsonMessage += "\"t\":\"" + t +"\",";
-			jsonMessage += "\"lat\":\"" + location.getLatitude() + "\",";
-			jsonMessage += "\"long\":\"" + location.getLongitude() + "\",";
-			jsonMessage += "\"alt\":\"" + location.getAltitude() + "\",";
-			jsonMessage += "\"speed\":\"" + location.getSpeed() + "\"}";
-			
-			_logWriter.writeToFile(jsonMessage);
+
+            _gpsWaypointCount += 1;
 			
 			if(_this != null)
 			{
 				_waypointsCount++;
+
+                FlightsDataSource dataSource = new FlightsDataSource(_this);
+                dataSource.open();
+                dataSource.createWaypoint(_dbId, t, location.getLatitude(), location.getLongitude(), location.getAltitude(), location.getSpeed());
+                dataSource.close();
 			}
 		}
 		
@@ -162,10 +155,10 @@ public class ServicePathLog extends Service implements SensorEventListener
 		
 		_sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 		_accelerometer = _sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-		_sensorManager.registerListener(this,  _accelerometer, SensorManager.SENSOR_DELAY_FASTEST);
+		_sensorManager.registerListener(this,  _accelerometer, SensorManager.SENSOR_DELAY_UI);
 
         _rotationSensor = _sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
-        _sensorManager.registerListener(this, _rotationSensor, SensorManager.SENSOR_DELAY_FASTEST);
+        _sensorManager.registerListener(this, _rotationSensor, SensorManager.SENSOR_DELAY_UI);
 	}
 	
 	@Override
@@ -240,35 +233,48 @@ public class ServicePathLog extends Service implements SensorEventListener
 		{
 			m_locationManager.removeUpdates(m_locationListener);
 		}
+
+        FlightsDataSource dataSource = new FlightsDataSource(this);
+        dataSource.open();
+        dataSource.setFlightRecording(_dbId, false);
+        dataSource.close();
 		
 		Message msg = Message.obtain();
-		
-		//delete flight when no waypoints where recorded
-		
-		String jsonMessage = "]}";
-		
-		_logWriter.writeToFile(jsonMessage);
-		_logWriter.closeFile();
-		
+
 		if(_waypointsCount <= 1)
 		{
-			
+            //FlightsDataSource dataSource = new FlightsDataSource(this);
+            dataSource.open();
+            dataSource.deleteFlight(_dbId, true);
+            dataSource.close();
+
+            msg.arg1 = Activity.RESULT_CANCELED;
 		}
 		else
 		{
-			
+            msg.arg1 = Activity.RESULT_OK;
 		}
+
+        if(_messenger != null)
+        {
+            try
+            {
+                _messenger.send(msg);
+            }
+            catch(Exception e)
+            {
+                Log.e(TAG, e.toString());
+            }
+        }
 	}
 	
 	private void initFlight()
 	{
+        Log.d(TAG, "initFlight");
+
 		_flight = new Flight();
 		
 		Calendar c = Calendar.getInstance();
-		//String date = c.get(Calendar.DAY_OF_MONTH) + "." + c.get(Calendar.MONTH) + " " + c.get(Calendar.HOUR_OF_DAY) + ":" + c.get(Calendar.MINUTE) + ":" + c.get(Calendar.SECOND);
-		
-		_fileName = "flight_" + c.get(Calendar.DAY_OF_MONTH) + "-" + c.get(Calendar.MONTH) + "_" + c.get(Calendar.HOUR_OF_DAY) + "-" + c.get(Calendar.MINUTE) + ".txt";
-		_logWriter.openFile(_fileName);
 		
 		_flight.setDate(new Flight.Date(c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH),
 										c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), c.get(Calendar.SECOND)));
@@ -276,16 +282,13 @@ public class ServicePathLog extends Service implements SensorEventListener
 		_flight.setDeparture(m_departure);
 		_flight.setDestination(m_destination);
 		_flight.setAirplaneType(m_airplaneType);
-		
-		String jsonMessage = "\"flight\": {";
-		jsonMessage += "\"departure\":\"" + m_departure + "\",";
-		jsonMessage += "\"destination\":\"" + m_departure + "\",";
-		jsonMessage += "\"airplane\":\"" + m_departure + "\",";
-		jsonMessage += "\"date\":\"" + _flight.getDate().serialize() + "\"\",";
-		jsonMessage += "\"waypoints\":[";
-		
-		_logWriter.writeToFile(jsonMessage);
-		
+
+        FlightsDataSource dataSource = new FlightsDataSource(this);
+        dataSource.open();
+        _dbId = dataSource.createFlight(_flight.getDate().toString(), _flight.getDeparture(), _flight.getDestination(), _flight.getAirplaneType());
+        dataSource.setFlightRecording(_dbId, true);
+        dataSource.close();
+
 		_waypointsCount = 0;
 	}
 	
@@ -294,41 +297,31 @@ public class ServicePathLog extends Service implements SensorEventListener
 	{
 		Sensor sensor = sensorEvent.sensor;
 		
-		if(sensor.getType() == Sensor.TYPE_ACCELEROMETER && _pitchRotation != null && _bankRotation != null)
+		if(sensor.getType() == Sensor.TYPE_ACCELEROMETER && _pitchRotation != null && _bankRotation != null && _azimuthRotation != null)
 		{
 			float x = sensorEvent.values[0];
 			float y = sensorEvent.values[1];
 			float z = sensorEvent.values[2];
 
             Vector3f vec = new Vector3f(x, y, z);
+            vec = _bankRotation.multiplyVector3f(vec);
             vec = _pitchRotation.multiplyVector3f(vec);
-            //vec = _bankRotation.multiplyVector3f(vec);
-            //vec = _azimuthRotation.multiplyVector3f(vec);
+            vec = _azimuthRotation.multiplyVector3f(vec);
 
             int t = getSecondsSinceStart();
-			
-			String jsonMessage = "";
-			
-			if(_waypointsCount > 0)
-			{
-				jsonMessage += ",";
-			}
-			
-			jsonMessage += "\"acceleration\":{";
-			jsonMessage += "\"t\":\"" + t + "\",";
-			jsonMessage += "\"x\":\"" + vec.getX() + "\",";
-			jsonMessage += "\"y\":\"" + vec.getY() + "\",";
-			jsonMessage += "\"z\":\"" + vec.getZ() + "\"}";
-			
-			_logWriter.writeToFile(jsonMessage);
-			
-			_waypointsCount++;
 
-            //Log.d(TAG, "acceleration: " + x + ", " + y + ", " + z);
+            if(_this != null)
+            {
+                _waypointsCount++;
 
-            float foo = x*x + y*y + z*z;
-            double bar = foo;
-            double gForce = Math.sqrt(bar);
+                FlightsDataSource dataSource = new FlightsDataSource(_this);
+                dataSource.open();
+                dataSource.createAccelerationPoint(_dbId, t, vec.getX(), vec.getY(), vec.getZ());
+                dataSource.close();
+            }
+
+            //float foo = x*x + y*y + z*z;
+            double gForce = vec.getZ(); //Math.sqrt(foo);
             gForce /= 9.81;
 
             if(gForce > _maxGForce)
@@ -341,55 +334,32 @@ public class ServicePathLog extends Service implements SensorEventListener
                 _minGForce = gForce;
             }
 
-            double[] values = {gForce, _maxGForce, _minGForce};
+            double[] values = {gForce, _maxGForce, _minGForce, (double)_waypointsCount};
             String[] keys = {getString(R.string.broadcast_extra_gforce),
                             getString(R.string.broadcast_extra_max_gforce),
-                            getString(R.string.broadcast_extra_min_gforce)};
+                            getString(R.string.broadcast_extra_min_gforce),
+                            "gpsWaypointCount"};
 
             broadcastMessage(values, keys);
-
-            //Log.d(TAG, "source: " + x + ", " + y + ", " + z);
-            //Log.d(TAG, "acceleration0: " + vec.getX() + ", " + vec.getY() + ", " + vec.getZ());
         }
         else if(sensor.getType() == Sensor.TYPE_ROTATION_VECTOR)
         {
-            /*
-            float x = sensorEvent.values[0];
-            float y = sensorEvent.values[1];
-            float z = sensorEvent.values[2];
-
-            Log.d(TAG, "rotation: " + x + ", " + y + ", " + z);
-            */
-
             float[] rotationMatrix = new float[4 * 4];
             float[] orientation = new float[3];
             SensorManager.getRotationMatrixFromVector(rotationMatrix, sensorEvent.values);
             SensorManager.remapCoordinateSystem(rotationMatrix, SensorManager.AXIS_X, SensorManager.AXIS_Y, rotationMatrix);
             SensorManager.getOrientation(rotationMatrix, orientation);
 
-            //Log.d(TAG, "orientation: " + Math.toDegrees((double)orientation[0]) + ", " + Math.toDegrees((double)orientation[1]) + ", " + Math.toDegrees((double)orientation[2]));
-
-            //orientation[0] = 0.0f* 3.14159f - orientation[0];
-            //orientation[1] = 0.0f* 3.14159f - orientation[1];
-            //orientation[2] = 0.0f* 3.14159f + orientation[2];
-
-            //orientation[1] = -orientation[1];
+            orientation[1] = -orientation[1];
 
             if(orientation[0] < 0.0f)
             {
                 orientation[0] = 2.0f*3.14159f + orientation[0];
             }
-            if(orientation[1] < 0.0f)
-            {
-                orientation[1] = 2.0f*3.14159f + orientation[1];
-            }
             if(orientation[2] < 0.0f)
             {
                 orientation[2] = 2.0f*3.14159f + orientation[2];
             }
-
-            //Log.d(TAG, "orientation: " + Math.toDegrees((double)orientation[0]) + ", " + Math.toDegrees((double)orientation[1]) + ", " + Math.toDegrees((double)orientation[2]));
-            Log.d(TAG, "orientation: " + (double)orientation[0] + ", " + (double)orientation[1] + ", " + (double)orientation[2]);
 
             float[] pitch0 = {1.0f, 0.0f, 0.0f};
             float[] pitch1 = {0.0f, (float)Math.cos((double)orientation[1]), (float)-Math.sin((double)orientation[1])};
@@ -405,15 +375,6 @@ public class ServicePathLog extends Service implements SensorEventListener
             float[] azimuth1 = {(float)Math.sin((double)orientation[0]), (float)Math.cos((double)orientation[0]), 0.0f};
             float[] azimuth2 = {0.0f, 0.0f, 1.0f};
             _azimuthRotation = new Matrix33f(azimuth0, azimuth1, azimuth2);
-
-            //Vector3f vec = new Vector3f(0.0f, 0.0f, 1.0f);
-            //Log.d(TAG, "source: " + vec.getX() + ", " + vec.getY() + ", " + vec.getZ());
-
-            //vec = _bankRotation.multiplyVector3f(vec);
-            //Log.d(TAG, "bank: " + vec.getX() + ", " + vec.getY() + ", " + vec.getZ());
-
-            //vec = _pitchRotation.multiplyVector3f(vec);
-            //Log.d(TAG, "pitch: " + vec.getX() + ", " + vec.getY() + ", " + vec.getZ());
         }
 	}
 

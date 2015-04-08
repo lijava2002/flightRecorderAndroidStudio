@@ -21,7 +21,7 @@ public class Flight
 	private String _airplaneType = "";
 	private Boolean _recording = false;
 	
-	private List<Waypoint> _waypoints = new ArrayList<Waypoint>();
+	private List<BaseWaypoint> _waypoints = new ArrayList<BaseWaypoint>();
 	
 	public static class Date
 	{
@@ -171,15 +171,20 @@ public class Flight
 			return result;
 		}
 	};
-	
-	public static class Waypoint
+
+    public abstract static class BaseWaypoint
+    {
+        public abstract String serialize();
+    };
+
+    public static class Waypoint extends BaseWaypoint
 	{
 		public int _t;
 		public double _latitude;
 		public double _longitude;
 		public double _altitude;
 		public float _speed;
-		
+
 		public Waypoint(int t, double latitude, double longitude, double altitude, float speed)
 		{
 			_t = t;
@@ -212,6 +217,44 @@ public class Flight
 			return result;
 		}
 	};
+
+    public static class AccelerationPoint extends BaseWaypoint
+    {
+        public int _t;
+        public double _x;
+        public double _y;
+        public double _z;
+
+        public AccelerationPoint(int t, double x, double y, double z)
+        {
+            _t = t;
+            _x = x;
+            _y = y;
+            _z = z;
+        }
+
+        public String serialize()
+        {
+            String result = "";
+            JSONObject object = new JSONObject();
+
+            try
+            {
+                object.put("t", _t);
+                object.put("x", _x);
+                object.put("y", _y);
+                object.put("z", _z);
+
+                result = object.toString();
+            }
+            catch(JSONException e)
+            {
+                Log.e(TAG, e.getMessage());
+            }
+
+            return result;
+        }
+    };
 	
 	public Flight()
 	{
@@ -302,7 +345,7 @@ public class Flight
 		return _waypoints.size();
 	}
 	
-	public Waypoint getWaypoint(int index)
+	public BaseWaypoint getWaypoint(int index)
 	{
 		if(index >= _waypoints.size() || index < 0)
 		{
@@ -313,7 +356,7 @@ public class Flight
 		return _waypoints.get(index);
 	}
 	
-	public void setWaypoints(ArrayList<Waypoint> waypoints)
+	public void setWaypoints(ArrayList<BaseWaypoint> waypoints)
 	{
 		_waypoints = waypoints;
 	}
@@ -331,7 +374,7 @@ public class Flight
 			object.put("departure", _departure);
 			object.put("destination", _destination);
 
-			for(Waypoint waypoint: _waypoints)
+			for(BaseWaypoint waypoint: _waypoints)
 			{
 				array.put(waypoint.serialize());
 			}
@@ -408,7 +451,7 @@ public class Flight
 		
 		for(int i = 0; i < _waypoints.size(); i++)
 		{
-			Waypoint waypoint = _waypoints.get(i);
+            BaseWaypoint waypoint = _waypoints.get(i);
 			
 			result += waypoint.serialize();
 			
